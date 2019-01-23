@@ -1,0 +1,87 @@
+#include <Arduino.h>
+
+const int LED_1 = LED_BUILTIN;
+const int PEOPELE_OUT = 8;
+const int SOUND_OUT = 9;
+const int led = 13;
+bool ledOn = false;
+
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(SOUND_OUT, INPUT);
+
+//  pinMode(LED_1, OUTPUT);
+}
+
+void loop()
+{    
+  
+  inputPeople();
+  
+  inputSound();
+
+  outputTD();
+  outputTD2();
+
+  delay(50);
+}
+
+void inputPeople()
+{
+  if (digitalRead(PEOPELE_OUT) == HIGH) {
+      Serial.print(1);
+  }
+  else{
+      Serial.print(0);
+  }
+  Serial.print("\n");
+}
+
+void inputSound()
+{
+  if (digitalRead(SOUND_OUT) == HIGH) {
+      Serial.print(1);
+  }
+  else{
+      Serial.print(0);
+  }
+  
+  Serial.print("\n");
+}
+
+void outputTD()
+{
+  if(Serial.available())
+  {
+      char input;
+    
+       // シリアルポートより1文字読み込む
+      input = Serial.read();  
+
+      if(input == 'a')
+      {
+        digitalWrite(led,HIGH);
+      }else{
+        digitalWrite(led,LOW);
+      }
+  }
+}
+
+void outputTD2()
+{
+  if(Serial.available())
+  {
+      char input;
+    
+       // シリアルポートより1文字読み込む
+      input = Serial.read();  
+
+      if(input == 'b')
+      {
+        digitalWrite(led,HIGH);
+      }else{
+        digitalWrite(led,LOW);
+      }
+  }
+}
