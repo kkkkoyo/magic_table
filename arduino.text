@@ -1,56 +1,144 @@
 #include <Arduino.h>
 
-const int LED_1 = LED_BUILTIN;
-const int PEOPELE_OUT = 8;
-const int SOUND_OUT = 9;
-const int led = 13;
-bool ledOn = false;
+// PIN: ソレノイド
+const int solenoid[6] = {13,12,11,10,9,8};
+// PIN: 人感センサ
+const int PEOPELE_OUT = 6;
+// PIN: 人感センサ
+const int touchPin[2] = {5,4};
+
+// ソレノイドの合計数
+const int solenoidNum = 6;
+
+bool isArduinoTimer = true;
+bool isDebug = false;
+
+int solenoid_OnTime = 10;
+String serialStr;
 
 void setup()
 {
   Serial.begin(9600);
-  pinMode(SOUND_OUT, INPUT);
 
-//  pinMode(LED_1, OUTPUT);
+  // 初期化：ソレノイド
+  for (int i = 0; i < solenoidNum; i ++) {
+    pinMode(solenoid[i],OUTPUT);
+  }
+
+  //5番ピンをデジタル出力
+  pinMode(touchPin[0],OUTPUT);
+  //4番ピンをデジタル入力
+  pinMode(touchPin[1],INPUT);
 }
 
 void loop()
-{    
-  
+{ 
+  // シリアルStrをリセット
+  serialStr = "";
+
+  // 人感センサで人を検出する
   inputPeople();
+  // タッチセンサで検出
+  inputTouch();
+
+  // デバック時、Aruduino単体でソレノイドを制御する
+  if(isDebug)
+  {
+    solenoidON();
+  }
   
-  inputSound();
-
-  outputTD();
-  outputTD2();
-
-  delay(50);
+  
+  // シリアル受信；ソレノイドのオンの確認
+  Serial_SolenoidOn(); 
+  
+  // シリアル受信；ソレノイドのセッティング時間の確認
+  Serial_SettingOnTime;
+  
+  // ArduinoTimerでなく、シリアル通信でオフにする場合
+  if(!isArduinoTimer)
+  {
+    Serial_SolenoidOff();
+  }
 }
 
+// シリアル通信を送信する
+/*
+ * 1：人感センサの値 (1:検出, 0: 非検出)
+ * 2：タッチセンサの値 (n: n > 0)
+ */
+void outputSerial()
+{
+  Serial.println(serialStr);
+}
+
+// 人感センサで人を検出する
 void inputPeople()
 {
   if (digitalRead(PEOPELE_OUT) == HIGH) {
-      Serial.print(1);
+      serialStr = "1\t";
   }
   else{
-      Serial.print(0);
+      serialStr = "0\t";
   }
-  Serial.print("\n");
 }
 
-void inputSound()
+
+// タッチセンサで検出
+void inputTouch()
 {
-  if (digitalRead(SOUND_OUT) == HIGH) {
-      Serial.print(1);
-  }
-  else{
-      Serial.print(0);
-  }
+  //静電容量変化量の変数を用意
+  int touchNum = 0;
+  //touchPin[0]番ピンをHIGHで出力
+  digitalWrite(touchPin[0], HIGH);
+  //指が触れたときtouchPin[1]番ピンがHIGHになるまでをカウント
   
-  Serial.print("\n");
+  while (digitalRead(touchPin[1])!=HIGH){
+    //カウントする
+    touchNum++;
+  }
+  delay(1);
+  //8番ピンをLOWにする
+  digitalWrite(touchPin[1], LOW);
+  
+  //モニタリング：値を出力
+  serialStr = touchNum+"\t";
 }
 
-void outputTD()
+
+// ソレノイドをONにする
+void solenoidON()
+{
+    // ソレノイドをONにする
+    for (int i = 0; i < solenoidNum; i ++) 
+    {
+      digitalWrite(solenoid[i],HIGH);
+    }
+    
+    if(isArduinoTimer)
+    {
+      delay(1000 * solenoid_OnTime);
+      solenoidOFF();
+    }
+}
+
+// ソレノイドをオフにする
+void solenoidOFF()
+{
+  // ソレノイドをオフにする
+  for (int i = 0; i < solenoidNum; i ++) 
+  {
+    digitalWrite(solenoid[i],LOW);
+  }
+
+  if(isDebug)
+  {
+    delay(5000);
+  }
+}
+
+
+// シリアル受信でソレノイドをオンにする
+void Serial_SolenoidOn()
 {
   if(Serial.available())
   {
@@ -61,14 +149,13 @@ void outputTD()
 
       if(input == 'a')
       {
-        digitalWrite(led,HIGH);
-      }else{
-        digitalWrite(led,LOW);
+        solenoidON();
       }
   }
 }
 
-void outputTD2()
+// シリアル受信でソレノイドをオフにする
+void Serial_SolenoidOff()
 {
   if(Serial.available())
   {
@@ -79,9 +166,33 @@ void outputTD2()
 
       if(input == 'b')
       {
-        digitalWrite(led,HIGH);
-      }else{
-        digitalWrite(led,LOW);
+        solenoidOFF();
       }
   }
+}
+
+// シリアル受信でソレノイドの時間を設定する
+void Serial_SettingOnTime()
+{
+  if(Serial.available())
+  {    
+       // シリアルポートより読み込む
+      byte input = Serial.read();
+      input  = input - 0x30;
+
+      for(int i = 1; i <= 1000; i ++)
+      {
+        if(input = i)
+        {
+          // ソレノイドがONの時間を設定する
+          SettingSolenoidOnTime(i);
+        }
+      }
+  }
+}
+
+// ソレノイドがオンの時間を設定する
+void SettingSolenoidOnTime(int time)
+{
+  solenoid_OnTime = time;
 }
