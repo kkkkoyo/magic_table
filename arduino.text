@@ -1,10 +1,10 @@
 #include <Arduino.h>
 
 // PIN: ソレノイド
-const int solenoid[6] = {13,12,11,10,9,8};
+const int solenoid[6] = {7,12,11,10,9,8};
 // PIN: 人感センサ
 const int PEOPELE_OUT = 6;
-// PIN: 人感センサ
+// PIN: タッチセンサ
 const int touchPin[2] = {5,4};
 
 // ソレノイドの合計数
@@ -13,7 +13,7 @@ const int solenoidNum = 6;
 bool isArduinoTimer = true;
 bool isDebug = false;
 
-int solenoid_OnTime = 10;
+int solenoid_OnTime = 5;
 String serialStr;
 
 void setup()
@@ -29,6 +29,9 @@ void setup()
   pinMode(touchPin[0],OUTPUT);
   //4番ピンをデジタル入力
   pinMode(touchPin[1],INPUT);
+
+  //6番ピンをデジタル入力
+   pinMode(PEOPELE_OUT,INPUT);
 }
 
 void loop()
@@ -38,6 +41,8 @@ void loop()
 
   // 人感センサで人を検出する
   inputPeople();
+
+
   // タッチセンサで検出
   inputTouch();
 
@@ -46,7 +51,9 @@ void loop()
   {
     solenoidON();
   }
-  
+
+  // シリアルのログを出す
+  outputSerial();
   
   // シリアル受信；ソレノイドのオンの確認
   Serial_SolenoidOn(); 
@@ -98,10 +105,10 @@ void inputTouch()
   }
   delay(1);
   //8番ピンをLOWにする
-  digitalWrite(touchPin[1], LOW);
+  digitalWrite(touchPin[0], LOW);
   
   //モニタリング：値を出力
-  serialStr = touchNum+"\t";
+  serialStr = serialStr + (String)touchNum+"\t";
 }
 
 
